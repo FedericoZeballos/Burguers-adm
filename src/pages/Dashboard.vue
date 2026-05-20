@@ -36,8 +36,12 @@ const topProducts = computed(() => {
 const topProfit = computed(() => {
   const map = {}
   saleStore.items.forEach(s => s.lines.forEach(l => {
-    const cost = (l.lineTotal - l.extraSubtotal)
-    map[l.name] = (map[l.name] || 0) + (l.lineTotal - cost)
+    const combo = comboStore.items.find(c => c.name === l.name)
+    const prod = prodStore.items.find(p => p.name === l.name)
+    const cost = combo ? combo.cost * l.qty : (prod ? prod.cost * l.qty : 0)
+    const productRevenue = (l.subtotal || l.unitPrice * l.qty)
+    const profit = (productRevenue - cost) + (l.extraSubtotal || 0)
+    map[l.name] = (map[l.name] || 0) + profit
   }))
   return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5)
 })
