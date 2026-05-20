@@ -198,7 +198,7 @@ function cardLines(item) {
         </div>
 
         <div class="bg-gray-800/50 rounded-lg p-3">
-          <p class="text-xs text-gray-500 mb-2 font-medium">Ingredientes</p>
+          <p class="text-sm font-semibold text-gray-300 mb-3">Ingredientes</p>
           <select v-model="ingToAdd" @change="addIng" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-xs focus:border-brand outline-none">
             <option value="">Agregar ingrediente...</option>
             <option v-for="i in ingOptions" :key="i.id" :value="i.id">{{ i.name }}</option>
@@ -218,7 +218,7 @@ function cardLines(item) {
         </div>
 
         <div class="bg-gray-800/50 rounded-lg p-3">
-          <p class="text-xs text-gray-500 mb-2 font-medium">Insumos</p>
+          <p class="text-sm font-semibold text-gray-300 mb-3">Insumos</p>
           <select v-model="supToAdd" @change="addSup" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-xs focus:border-brand outline-none">
             <option value="">Agregar insumo...</option>
             <option v-for="s in supOptions" :key="s.id" :value="s.id">{{ s.name }}</option>
@@ -238,7 +238,7 @@ function cardLines(item) {
         </div>
 
         <div class="bg-gray-800/50 rounded-lg p-3">
-          <p class="text-xs text-gray-500 mb-2 font-medium">Productos</p>
+          <p class="text-sm font-semibold text-gray-300 mb-3">Productos</p>
           <select v-model="prodToAdd" @change="addProd" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-xs focus:border-brand outline-none">
             <option value="">Agregar producto...</option>
             <option v-for="p in prodOptions" :key="p.id" :value="p.id">{{ p.name }}</option>
@@ -262,7 +262,7 @@ function cardLines(item) {
           <input v-model.number="form.price" type="number" step="0.01" min="0" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-brand outline-none" />
         </div>
 
-        <div v-if="formLines.length" class="bg-gray-800 rounded-lg p-3 text-sm space-y-1">
+        <div v-if="formLines.length" class="bg-gray-800 border border-brand/10 rounded-lg p-3 text-sm space-y-1">
           <div v-for="l in formLines" :key="l.name" class="flex justify-between text-xs text-gray-400">
             <span>{{ l.name }} <span class="text-gray-600">x{{ l.qty }} (${{ l.cost }}/{{ l.unit }})</span></span>
             <span>${{ l.subtotal }}</span>

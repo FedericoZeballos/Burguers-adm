@@ -76,23 +76,36 @@ function onSaleEnter(e) {
   e.target.blur()
 }
 
-function addIngredient(id) {
-  if (form.value.ingredients.find(i => i.id === id)) return
-  form.value.ingredients.push({ id, qty: 1 })
-}
+const ingToAdd = ref('')
+const supToAdd = ref('')
 
-function removeIngredient(id) {
-  form.value.ingredients = form.value.ingredients.filter(i => i.id !== id)
+function addIng() {
+  if (!ingToAdd.value) return
+  const id = ingToAdd.value
+  const existing = form.value.ingredients.find(i => i.id === id)
+  if (existing) existing.qty++
+  else form.value.ingredients.push({ id, qty: 1 })
+  ingToAdd.value = ''
 }
+function incIng(idx) { form.value.ingredients[idx].qty++ }
+function decIng(idx) {
+  if (form.value.ingredients[idx].qty > 1) form.value.ingredients[idx].qty--
+}
+function removeIng(idx) { form.value.ingredients.splice(idx, 1) }
 
-function addSupply(id) {
-  if (form.value.supplies.find(s => s.id === id)) return
-  form.value.supplies.push({ id, qty: 1 })
+function addSup() {
+  if (!supToAdd.value) return
+  const id = supToAdd.value
+  const existing = form.value.supplies.find(s => s.id === id)
+  if (existing) existing.qty++
+  else form.value.supplies.push({ id, qty: 1 })
+  supToAdd.value = ''
 }
-
-function removeSupply(id) {
-  form.value.supplies = form.value.supplies.filter(s => s.id !== id)
+function incSup(idx) { form.value.supplies[idx].qty++ }
+function decSup(idx) {
+  if (form.value.supplies[idx].qty > 1) form.value.supplies[idx].qty--
 }
+function removeSup(idx) { form.value.supplies.splice(idx, 1) }
 
 function save() {
   if (!form.value.name.trim()) return
@@ -149,39 +162,47 @@ function confirmDelete(id) {
           </div>
         </div>
 
-        <div>
-          <label class="block text-sm text-gray-400 mb-1">Ingredientes</label>
-          <div class="flex flex-wrap gap-1 mb-2">
-            <button v-for="ing in ingStore.items" :key="ing.id" @click.prevent="addIngredient(ing.id)"
-              class="text-xs px-2 py-1 rounded-full transition-colors"
-              :class="form.ingredients.find(i => i.id === ing.id) ? 'bg-brand/20 text-brand' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'"
-            >{{ ing.name }} <span class="opacity-60">${{ ing.costPerUnit }}/{{ ing.unit }}</span></button>
-          </div>
-          <div v-for="entry in form.ingredients" :key="entry.id" class="flex items-center gap-2 mb-1">
-            <span class="text-sm text-gray-300 flex-1">{{ ingStore.items.find(i => i.id === entry.id)?.name }}</span>
-            <span class="text-xs text-gray-500 w-20">${{ ingStore.items.find(i => i.id === entry.id)?.costPerUnit }}/{{ ingStore.items.find(i => i.id === entry.id)?.unit }}</span>
-            <input v-model.number="entry.qty" type="number" min="0" :step="getStepForUnit(ingStore.items.find(i => i.id === entry.id)?.unit || 'unidad')" class="w-20 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs" />
-            <button @click.prevent="removeIngredient(entry.id)" class="text-red-400 text-xs">&times;</button>
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-sm text-gray-400 mb-1">Insumos</label>
-          <div class="flex flex-wrap gap-1 mb-2">
-            <button v-for="sup in supStore.items" :key="sup.id" @click.prevent="addSupply(sup.id)"
-              class="text-xs px-2 py-1 rounded-full transition-colors"
-              :class="form.supplies.find(s => s.id === sup.id) ? 'bg-brand/20 text-brand' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'"
-            >{{ sup.name }} <span class="opacity-60">${{ sup.costPerUnit }}/{{ sup.unit }}</span></button>
-          </div>
-          <div v-for="entry in form.supplies" :key="entry.id" class="flex items-center gap-2 mb-1">
-            <span class="text-sm text-gray-300 flex-1">{{ supStore.items.find(i => i.id === entry.id)?.name }}</span>
-            <span class="text-xs text-gray-500 w-20">${{ supStore.items.find(i => i.id === entry.id)?.costPerUnit }}/{{ supStore.items.find(i => i.id === entry.id)?.unit }}</span>
-            <input v-model.number="entry.qty" type="number" min="0" :step="getStepForUnit(supStore.items.find(i => i.id === entry.id)?.unit || 'unidad')" class="w-20 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs" />
-            <button @click.prevent="removeSupply(entry.id)" class="text-red-400 text-xs">&times;</button>
+        <div class="bg-gray-800/50 rounded-lg p-3">
+          <p class="text-sm font-semibold text-gray-300 mb-3">Ingredientes</p>
+          <select v-model="ingToAdd" @change="addIng" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-xs focus:border-brand outline-none">
+            <option value="">Agregar ingrediente...</option>
+            <option v-for="ing in ingStore.items" :key="ing.id" :value="ing.id">{{ ing.name }} (${{ ing.costPerUnit }}/{{ ing.unit }})</option>
+          </select>
+          <div v-for="(entry, idx) in form.ingredients" :key="entry.id" class="flex items-center justify-between text-xs text-gray-400 py-1 mt-1">
+            <div class="flex items-center gap-1 min-w-0">
+              <button type="button" @click="decIng(idx)" class="w-5 h-5 flex items-center justify-center rounded bg-gray-700 hover:bg-gray-600 shrink-0">−</button>
+              <span class="w-4 text-center text-white shrink-0">{{ entry.qty }}</span>
+              <button type="button" @click="incIng(idx)" class="w-5 h-5 flex items-center justify-center rounded bg-gray-700 hover:bg-gray-600 shrink-0">+</button>
+              <span class="ml-2 truncate">{{ ingStore.items.find(i => i.id === entry.id)?.name }} <span class="text-gray-600">(${{ ingStore.items.find(i => i.id === entry.id)?.costPerUnit }}/{{ ingStore.items.find(i => i.id === entry.id)?.unit }})</span></span>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="text-gray-300">${{ +(entry.qty * (ingStore.items.find(i => i.id === entry.id)?.costPerUnit || 0)).toFixed(2) }}</span>
+              <button type="button" @click="removeIng(idx)" class="w-5 h-5 flex items-center justify-center rounded bg-gray-700 text-xs text-red-400 hover:bg-red-900/40 hover:text-red-300">&times;</button>
+            </div>
           </div>
         </div>
 
-        <div class="bg-gray-800 rounded-lg p-3 text-sm space-y-1">
+        <div class="bg-gray-800/50 rounded-lg p-3">
+          <p class="text-sm font-semibold text-gray-300 mb-3">Insumos</p>
+          <select v-model="supToAdd" @change="addSup" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-xs focus:border-brand outline-none">
+            <option value="">Agregar insumo...</option>
+            <option v-for="sup in supStore.items" :key="sup.id" :value="sup.id">{{ sup.name }} (${{ sup.costPerUnit }}/{{ sup.unit }})</option>
+          </select>
+          <div v-for="(entry, idx) in form.supplies" :key="entry.id" class="flex items-center justify-between text-xs text-gray-400 py-1 mt-1">
+            <div class="flex items-center gap-1 min-w-0">
+              <button type="button" @click="decSup(idx)" class="w-5 h-5 flex items-center justify-center rounded bg-gray-700 hover:bg-gray-600 shrink-0">−</button>
+              <span class="w-4 text-center text-white shrink-0">{{ entry.qty }}</span>
+              <button type="button" @click="incSup(idx)" class="w-5 h-5 flex items-center justify-center rounded bg-gray-700 hover:bg-gray-600 shrink-0">+</button>
+              <span class="ml-2 truncate">{{ supStore.items.find(s => s.id === entry.id)?.name }} <span class="text-gray-600">(${{ supStore.items.find(s => s.id === entry.id)?.costPerUnit }}/{{ supStore.items.find(s => s.id === entry.id)?.unit }})</span></span>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="text-gray-300">${{ +(entry.qty * (supStore.items.find(s => s.id === entry.id)?.costPerUnit || 0)).toFixed(2) }}</span>
+              <button type="button" @click="removeSup(idx)" class="w-5 h-5 flex items-center justify-center rounded bg-gray-700 text-xs text-red-400 hover:bg-red-900/40 hover:text-red-300">&times;</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-gray-800 border border-brand/10 rounded-lg p-3 text-sm space-y-1">
           <div v-for="entry in form.ingredients" :key="entry.id" class="flex justify-between text-xs text-gray-500">
             <span>{{ ingStore.items.find(i => i.id === entry.id)?.name }} x{{ entry.qty }}</span>
             <span>${{ ((ingStore.items.find(i => i.id === entry.id)?.costPerUnit || 0) * entry.qty).toFixed(2) }}</span>

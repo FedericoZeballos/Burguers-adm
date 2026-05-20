@@ -41,14 +41,21 @@ const previewProfitPct = computed(() => {
 })
 const previewProfitMoney = computed(() => +(form.value.salePrice - previewCost.value).toFixed(2))
 
-function addProduct(id) {
-  if (form.value.products.find(p => p.productId === id)) return
-  form.value.products.push({ productId: id, qty: 1 })
-}
+const prodToAdd = ref('')
 
-function removeProduct(productId) {
-  form.value.products = form.value.products.filter(p => p.productId !== productId)
+function addProd() {
+  if (!prodToAdd.value) return
+  const id = prodToAdd.value
+  const existing = form.value.products.find(p => p.productId === id)
+  if (existing) existing.qty++
+  else form.value.products.push({ productId: id, qty: 1 })
+  prodToAdd.value = ''
 }
+function incProd(idx) { form.value.products[idx].qty++ }
+function decProd(idx) {
+  if (form.value.products[idx].qty > 1) form.value.products[idx].qty--
+}
+function removeProd(idx) { form.value.products.splice(idx, 1) }
 
 function save() {
   if (!form.value.name.trim()) return
@@ -89,18 +96,23 @@ function confirmDelete(id) {
           <input v-model="form.name" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none" required />
         </div>
 
-        <div>
-          <label class="block text-sm text-gray-400 mb-1">Productos incluidos</label>
-          <div class="flex flex-wrap gap-1 mb-2">
-            <button v-for="p in prodStore.items.filter(p => p.active)" :key="p.id" @click.prevent="addProduct(p.id)"
-              class="text-xs px-2 py-1 rounded-full transition-colors"
-              :class="form.products.find(x => x.productId === p.id) ? 'bg-brand/20 text-brand' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'"
-            >{{ p.name }}</button>
-          </div>
-          <div v-for="entry in form.products" :key="entry.productId" class="flex items-center gap-2 mb-1">
-            <span class="text-sm text-gray-300 flex-1">{{ prodStore.items.find(p => p.id === entry.productId)?.name }}</span>
-            <input v-model.number="entry.qty" type="number" min="1" class="w-16 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs" />
-            <button @click.prevent="removeProduct(entry.productId)" class="text-red-400 text-xs">&times;</button>
+        <div class="bg-gray-800/50 rounded-lg p-3">
+          <p class="text-sm font-semibold text-gray-300 mb-3">Productos incluidos</p>
+          <select v-model="prodToAdd" @change="addProd" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-xs focus:border-brand outline-none">
+            <option value="">Agregar producto...</option>
+            <option v-for="p in prodStore.items.filter(p => p.active)" :key="p.id" :value="p.id">{{ p.name }} (${{ p.cost }}/un)</option>
+          </select>
+          <div v-for="(entry, idx) in form.products" :key="entry.productId" class="flex items-center justify-between text-xs text-gray-400 py-1 mt-1">
+            <div class="flex items-center gap-1 min-w-0">
+              <button type="button" @click="decProd(idx)" class="w-5 h-5 flex items-center justify-center rounded bg-gray-700 hover:bg-gray-600 shrink-0">−</button>
+              <span class="w-4 text-center text-white shrink-0">{{ entry.qty }}</span>
+              <button type="button" @click="incProd(idx)" class="w-5 h-5 flex items-center justify-center rounded bg-gray-700 hover:bg-gray-600 shrink-0">+</button>
+              <span class="ml-2 truncate">{{ prodStore.items.find(p => p.id === entry.productId)?.name }} <span class="text-gray-600">(${{ prodStore.items.find(p => p.id === entry.productId)?.cost }}/un)</span></span>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="text-gray-300">${{ +(entry.qty * (prodStore.items.find(p => p.id === entry.productId)?.cost || 0)).toFixed(2) }}</span>
+              <button type="button" @click="removeProd(idx)" class="w-5 h-5 flex items-center justify-center rounded bg-gray-700 text-xs text-red-400 hover:bg-red-900/40 hover:text-red-300">&times;</button>
+            </div>
           </div>
         </div>
 
@@ -120,7 +132,7 @@ function confirmDelete(id) {
           </div>
         </div>
 
-        <div class="bg-gray-800 rounded-lg p-3 text-sm space-y-1">
+        <div class="bg-gray-800 border border-brand/10 rounded-lg p-3 text-sm space-y-1">
           <div class="flex justify-between"><span class="text-gray-400">Costo:</span><span>${{ previewCost }}</span></div>
           <div class="flex justify-between"><span class="text-gray-400">Precio venta:</span><span class="text-brand font-semibold">${{ form.salePrice }}</span></div>
           <div class="flex justify-between"><span class="text-gray-400">Margen:</span><span class="text-green-400">{{ previewProfitPct }}%</span></div>

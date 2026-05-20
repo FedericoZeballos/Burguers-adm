@@ -71,22 +71,29 @@ function confirmRemove(id) {
     <ConfirmDialog :show="!!confirmDelete" title="Eliminar descuento" message="¿Eliminar este descuento? Esta acción no se puede deshacer." confirmText="Eliminar" :danger="true" @confirm="store.remove(confirmDelete); confirmDelete = null" @cancel="confirmDelete = null" />
     <ConfirmDialog :show="confirmSave" title="Guardar cambios" message="¿Confirmar los cambios en este descuento?" confirmText="Guardar" @confirm="doSave" @cancel="confirmSave = false" />
     <Modal :show="showModal" :title="editing ? 'Editar Descuento' : 'Nuevo Descuento'" @close="showModal = false">
-      <form @submit.prevent="save" class="space-y-3">
+      <form @submit.prevent="save" class="space-y-4">
         <div>
           <label class="block text-sm text-gray-400 mb-1">Nombre</label>
           <input v-model="form.name" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none" required />
         </div>
-        <div>
-          <label class="block text-sm text-gray-400 mb-1">Tipo</label>
-          <select v-model="form.type" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none">
-            <option value="%">Porcentaje (%)</option>
-            <option value="fixed">Monto fijo ($)</option>
-          </select>
+
+        <div class="bg-gray-800/50 rounded-lg p-3">
+          <p class="text-sm font-semibold text-gray-300 mb-3">Configuración del descuento</p>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-sm text-gray-400 mb-1">Tipo</label>
+              <select v-model="form.type" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none">
+                <option value="%">Porcentaje (%)</option>
+                <option value="fixed">Monto fijo ($)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm text-gray-400 mb-1">Valor</label>
+              <input v-model.number="form.value" type="number" step="0.01" min="0" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none" required />
+            </div>
+          </div>
         </div>
-        <div>
-          <label class="block text-sm text-gray-400 mb-1">Valor</label>
-          <input v-model.number="form.value" type="number" step="0.01" min="0" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none" required />
-        </div>
+
         <div class="flex gap-2 pt-2">
           <button type="submit" class="flex-1 px-4 py-2 bg-brand text-gray-900 font-medium rounded-lg hover:bg-brand-dark">{{ editing ? 'Guardar' : 'Crear' }}</button>
           <button type="button" @click="showModal = false" class="px-4 py-2 bg-gray-800 rounded-lg hover:bg-gray-700">Cancelar</button>

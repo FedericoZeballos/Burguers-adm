@@ -87,42 +87,51 @@ function confirmRemove(id) {
     <ConfirmDialog :show="!!confirmDelete" title="Eliminar insumo" message="¿Eliminar este insumo? Esta acción no se puede deshacer." confirmText="Eliminar" :danger="true" @confirm="store.remove(confirmDelete); confirmDelete = null" @cancel="confirmDelete = null" />
     <ConfirmDialog :show="confirmSave" title="Guardar cambios" message="¿Confirmar los cambios en este insumo?" confirmText="Guardar" @confirm="doSave" @cancel="confirmSave = false" />
     <Modal :show="showModal" :title="editing ? 'Editar Insumo' : 'Nuevo Insumo'" @close="showModal = false">
-      <form @submit.prevent="save" class="space-y-3">
+      <form @submit.prevent="save" class="space-y-4">
         <div>
           <label class="block text-sm text-gray-400 mb-1">Nombre</label>
           <input v-model="form.name" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none" required />
         </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm text-gray-400 mb-1">Precio de costo por {{ form.unit }}</label>
-            <input v-model.number="form.costPerUnit" type="number" step="0.01" min="0" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none" required />
+
+        <div class="bg-gray-800/50 rounded-lg p-3">
+          <p class="text-sm font-semibold text-gray-300 mb-3">Costo y stock</p>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm text-gray-400 mb-1">Precio de costo por {{ form.unit }}</label>
+              <input v-model.number="form.costPerUnit" type="number" step="0.01" min="0" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none" required />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-400 mb-1">Stock</label>
+              <input v-model.number="form.quantity" type="number" :step="getStepForUnit(form.unit)" min="0" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none" required />
+            </div>
           </div>
-          <div>
-            <label class="block text-sm text-gray-400 mb-1">Stock</label>
-            <input v-model.number="form.quantity" type="number" :step="getStepForUnit(form.unit)" min="0" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none" required />
+          <div class="mt-3">
+            <label class="block text-sm text-gray-400 mb-1">Unidad</label>
+            <select v-model="form.unit" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none">
+              <option value="kg">kg</option><option value="g">g</option><option value="l">l</option><option value="ml">ml</option><option value="unidad">unidad</option>
+            </select>
           </div>
         </div>
-        <div>
-          <label class="block text-sm text-gray-400 mb-1">Unidad</label>
-          <select v-model="form.unit" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none">
-            <option value="kg">kg</option><option value="g">g</option><option value="l">l</option><option value="ml">ml</option><option value="unidad">unidad</option>
-          </select>
-        </div>
-        <div class="bg-gray-800 rounded-lg p-3 text-sm flex justify-between">
+
+        <div class="bg-gray-800 border border-brand/10 rounded-lg p-3 text-sm flex justify-between">
           <span class="text-gray-400">Precio total:</span>
           <span class="text-brand font-semibold">${{ (form.costPerUnit * form.quantity).toFixed(2) }}</span>
         </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm text-gray-400 mb-1">Fecha compra</label>
-            <input v-model="form.purchaseDate" type="date" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none" />
-          </div>
-          <div>
-            <label class="block text-sm text-gray-400 mb-1">Fecha vencimiento</label>
-            <input v-model="form.expiryDate" type="date" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none" />
+        <div class="bg-gray-800/50 rounded-lg p-3">
+          <p class="text-sm font-semibold text-gray-300 mb-3">Fechas</p>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm text-gray-400 mb-1">Fecha compra</label>
+              <input v-model="form.purchaseDate" type="date" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none" />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-400 mb-1">Fecha vencimiento</label>
+              <input v-model="form.expiryDate" type="date" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none" />
+            </div>
           </div>
         </div>
-        <label class="flex items-center gap-2 text-sm cursor-pointer">
+
+        <label class="flex items-center gap-2 text-sm cursor-pointer bg-gray-800/50 rounded-lg p-3">
           <input v-model="form.vendible" type="checkbox" class="rounded border-gray-600 bg-gray-800 text-brand focus:ring-brand" />
           <span>Vendible</span>
         </label>
