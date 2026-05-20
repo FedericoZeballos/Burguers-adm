@@ -34,9 +34,27 @@ export const useSalesStore = defineStore('sales', () => {
         for (const extra of (line.extras || [])) {
           const extraDef = extraStore.items.find(e => e.id === extra.id)
           if (!extraDef) continue
+          const factor = extra.qty
+          for (const ing of (extraDef.ingredients || [])) {
+            const item = ingStore.items.find(i => i.id === ing.id)
+            if (item) item.stock = Math.max(0, +(item.stock - ing.qty * factor).toFixed(4))
+          }
           for (const sup of (extraDef.supplies || [])) {
             const item = supStore.items.find(s => s.id === sup.id)
-            if (item) item.stock = Math.max(0, +(item.stock - sup.qty * extra.qty).toFixed(4))
+            if (item) item.stock = Math.max(0, +(item.stock - sup.qty * factor).toFixed(4))
+          }
+          for (const entry of (extraDef.products || [])) {
+            const p = prodStore.items.find(x => x.id === entry.productId)
+            if (!p) continue
+            const pf = entry.qty * factor
+            for (const ing of (p.ingredients || [])) {
+              const item = ingStore.items.find(i => i.id === ing.id)
+              if (item) item.stock = Math.max(0, +(item.stock - ing.qty * pf).toFixed(4))
+            }
+            for (const sup of (p.supplies || [])) {
+              const item = supStore.items.find(s => s.id === sup.id)
+              if (item) item.stock = Math.max(0, +(item.stock - sup.qty * pf).toFixed(4))
+            }
           }
         }
       } else if (line.type === 'combo') {

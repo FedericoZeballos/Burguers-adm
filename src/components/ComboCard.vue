@@ -2,11 +2,13 @@
 import { computed } from 'vue'
 import { formatDate, daysUntil } from '../models/helpers'
 import { useComboStore } from '../stores/comboStore'
+import { useProductStore } from '../stores/productStore'
 
 const props = defineProps({ combo: Object })
 const emit = defineEmits(['edit', 'toggle', 'delete'])
 
 const comboStore = useComboStore()
+const prodStore = useProductStore()
 
 const expiring = computed(() => {
   if (!props.combo.endDate) return false
@@ -25,6 +27,13 @@ const stockClass = computed(() => {
   if (available.value <= 5) return 'text-yellow-400'
   return 'text-green-400'
 })
+
+const productsResolved = computed(() =>
+  (props.combo.products || []).map(entry => {
+    const p = prodStore.items.find(i => i.id === entry.productId)
+    return { name: p ? p.name : '?', qty: entry.qty }
+  })
+)
 </script>
 
 <template>
@@ -47,13 +56,25 @@ const stockClass = computed(() => {
     <div class="space-y-1 text-sm">
       <div class="flex justify-between"><span class="text-gray-400">Costo:</span><span>${{ combo.cost }}</span></div>
       <div class="flex justify-between"><span class="text-gray-400">Venta:</span><span class="text-brand font-semibold">${{ combo.salePrice }}</span></div>
-      <div class="flex justify-between"><span class="text-gray-400">Margen:</span><span class="text-green-400">{{ combo.profitPct }}%</span></div>
-      <div class="flex justify-between"><span class="text-gray-400">Ganancia:</span><span class="text-green-400">${{ combo.profitMoney }}</span></div>
-      <div class="flex justify-between pt-1 border-t border-gray-800">
+      <div class="flex justify-between"><span class="text-gray-400">Margen:</span><span class="text-green-400">${{ combo.profitMoney }}</span></div>
+      <div class="flex justify-between"><span class="text-gray-400">Ganancia:</span><span class="text-green-400">{{ combo.profitPct }}%</span></div>
+    </div>
+
+    <div v-if="productsResolved.length" class="mt-3 pt-3 border-t border-gray-800">
+      <p class="text-xs text-gray-500 mb-1 font-medium">Productos</p>
+      <div v-for="p in productsResolved" :key="p.name" class="text-xs text-gray-400 flex justify-between">
+        <span>{{ p.name }}</span>
+        <span>x{{ p.qty }}</span>
+      </div>
+    </div>
+
+    <div class="mt-3 pt-3 border-t border-gray-800">
+      <div class="flex justify-between text-sm">
         <span class="text-gray-400">Disponibles:</span>
         <span class="font-medium" :class="stockClass">{{ available }}</span>
       </div>
     </div>
+
     <div class="flex gap-2 mt-3 pt-3 border-t border-gray-800">
       <button @click="emit('toggle', combo.id)" class="text-xs px-3 py-1 rounded-lg bg-gray-800 hover:bg-gray-700">{{ combo.active ? 'Desactivar' : 'Activar' }}</button>
       <button @click="emit('edit', combo)" class="text-xs px-3 py-1 rounded-lg bg-brand/10 text-brand hover:bg-brand/20">Editar</button>

@@ -5,8 +5,6 @@ import { useProductStore } from '../stores/productStore'
 import { useComboStore } from '../stores/comboStore'
 import { useExtraStore } from '../stores/extraStore'
 import { useDiscountStore } from '../stores/discountStore'
-import { useIngredientStore } from '../stores/ingredientStore'
-import { useSupplyStore } from '../stores/supplyStore'
 import { calcSubtotal, calcDiscount } from '../models/helpers'
 import Modal from '../components/Modal.vue'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
@@ -17,14 +15,12 @@ const prodStore = useProductStore()
 const comboStore = useComboStore()
 const extraStore = useExtraStore()
 const discStore = useDiscountStore()
-const ingStore = useIngredientStore()
-const supStore = useSupplyStore()
 
 const showModal = ref(false)
 const confirmSaveSale = ref(false)
 const selectedType = ref('product')
 const selectedId = ref('')
-const selectedQty = ref(1)
+
 const saleLines = ref([])
 const saleDiscounts = ref([])
 const saleNotes = ref('')
@@ -50,21 +46,27 @@ const discountAmount = computed(() => {
 const finalTotal = computed(() => +(subtotalTotal.value - discountAmount.value).toFixed(2))
 
 function addLine() {
-  if (!selectedId.value || selectedQty.value < 1) return
+  if (!selectedId.value) return
   const item = availableItems.value.find(x => x.id === selectedId.value)
   if (!item) return
-  const existing = saleLines.value.find(l => l.productId === selectedId.value && l.type === selectedType.value)
-  if (existing) {
-    existing.qty += selectedQty.value
-  } else {
-    saleLines.value.push({ productId: selectedId.value, type: selectedType.value, name: item.name, unitPrice: item.price, qty: selectedQty.value, extras: [] })
-  }
+  saleLines.value.push({ productId: selectedId.value, type: selectedType.value, name: item.name, unitPrice: item.price, qty: 1, extras: [] })
   selectedId.value = ''
-  selectedQty.value = 1
 }
 
 function removeLine(idx) {
   saleLines.value.splice(idx, 1)
+  delete expandedExtras.value[idx]
+}
+
+function incrementQty(idx) {
+  if (!saleLines.value[idx]) return
+  saleLines.value[idx] = { ...saleLines.value[idx], qty: saleLines.value[idx].qty + 1 }
+}
+
+function decrementQty(idx) {
+  if (!saleLines.value[idx]) return
+  if (saleLines.value[idx].qty <= 1) return
+  saleLines.value[idx] = { ...saleLines.value[idx], qty: saleLines.value[idx].qty - 1 }
 }
 
 function toggleExtras(idx) {
@@ -75,7 +77,7 @@ function addExtra(lineIdx, extra) {
   const line = saleLines.value[lineIdx]
   const existing = line.extras.find(e => e.id === extra.id)
   if (existing) existing.qty++
-  else line.extras.push({ id: extra.id, name: extra.name, price: extra.price, type: extra.type, refId: extra.refId, qty: 1 })
+  else line.extras.push({ id: extra.id, name: extra.name, price: extra.price, qty: 1 })
 }
 
 function removeExtra(lineIdx, extraId) {
@@ -134,19 +136,16 @@ const recentSales = computed(() => [...saleStore.items].reverse().slice(0, 20))
           <button @click="selectedType = 'combo'" class="flex-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors" :class="selectedType === 'combo' ? 'bg-brand text-gray-900' : 'bg-gray-800 text-gray-400'">Combo</button>
         </div>
 
-        <div class="flex flex-col sm:flex-row gap-2">
-          <select v-model="selectedId" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-brand outline-none">
-            <option value="">Seleccionar...</option>
-            <option v-for="item in availableItems" :key="item.id" :value="item.id">{{ item.name }} - ${{ item.price }}</option>
-          </select>
-          <div class="flex gap-2">
-            <input v-model.number="selectedQty" type="number" min="1" class="w-20 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-brand outline-none" />
-            <button @click="addLine" class="whitespace-nowrap px-4 py-2 bg-brand text-gray-900 rounded-lg text-sm font-medium hover:bg-brand-dark">Agregar</button>
-          </div>
-        </div>
+        <select v-model="selectedId" @change="addLine" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-brand outline-none">
+          <option value="">Seleccionar...</option>
+          <option v-for="item in availableItems" :key="item.id" :value="item.id">{{ item.name }} - ${{ item.price }}</option>
+        </select>
 
-        <div v-if="saleLines.length" class="space-y-2 max-h-60 overflow-y-auto">
-          <div v-for="(line, i) in saleLines" :key="i" class="bg-gray-800 rounded-lg p-3">
+        <div v-if="saleLines.length" class="space-y-2 max-h-80 overflow-y-auto">
+          <div v-for="(line, i) in saleLines" :key="i"
+            class="rounded-lg p-3 transition-colors"
+            :class="line.extras.length ? 'border border-brand/40 bg-gray-800/80' : 'bg-gray-800'"
+          >
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2 min-w-0">
                 <button v-if="line.type === 'product'" @click="toggleExtras(i)" class="text-gray-500 hover:text-white shrink-0 text-xs w-4">
@@ -154,20 +153,20 @@ const recentSales = computed(() => [...saleStore.items].reverse().slice(0, 20))
                 </button>
                 <span v-else class="text-gray-600 shrink-0 text-xs w-4">◇</span>
                 <span class="text-sm font-medium truncate">{{ line.name }}</span>
-                <span class="text-xs text-gray-500 shrink-0">x{{ line.qty }}</span>
+                <span class="text-xs text-gray-600 shrink-0">#{{ i + 1 }}</span>
               </div>
               <div class="flex items-center gap-2 shrink-0">
-                <span v-if="line.type === 'product' && line.extras.length" class="text-xs text-gray-500">+{{ line.extras.reduce((s, e) => s + e.qty, 0) }}</span>
-                <span class="text-sm text-brand">${{ calcSubtotal(line.unitPrice, line.qty) }}</span>
-                <button @click="removeLine(i)" class="text-red-400 text-xs hover:text-red-300">&times;</button>
+                <div class="flex items-center gap-1">
+                  <button @click="decrementQty(i)" class="w-5 h-5 flex items-center justify-center rounded bg-gray-700 text-xs hover:bg-gray-600">−</button>
+                  <span class="text-xs w-4 text-center text-white">{{ line.qty }}</span>
+                  <button @click="incrementQty(i)" class="w-5 h-5 flex items-center justify-center rounded bg-gray-700 text-xs hover:bg-gray-600">+</button>
+                </div>
+                <span class="text-sm text-brand font-semibold">${{ calcSubtotal(line.unitPrice, line.qty) }}</span>
+                <button @click="removeLine(i)" class="text-red-400 text-lg hover:text-red-300 leading-none">&times;</button>
               </div>
             </div>
 
-            <div v-if="line.type === 'product' && line.extras.length && !expandedExtras[i]" class="mt-1 text-xs text-gray-500 ml-6">
-              <span v-for="(extra, ei) in line.extras" :key="extra.id" class="mr-2">+{{ extra.name }} x{{ extra.qty }}<span v-if="ei < line.extras.length - 1">, </span></span>
-            </div>
-
-            <div v-if="expandedExtras[i] && line.type === 'product'" class="mt-2 ml-4 border-l border-gray-700 pl-3 space-y-1">
+            <div v-if="expandedExtras[i] && line.type === 'product'" class="mt-2 ml-4 border-l border-gray-600 pl-3 space-y-1">
               <div v-for="extra in extraStore.items.filter(e => e.active)" :key="extra.id" class="flex items-center justify-between py-1">
                 <span class="text-xs text-gray-400">{{ extra.name }} <span class="text-brand">+${{ extra.price }}</span></span>
                 <div class="flex items-center gap-1">
@@ -178,7 +177,32 @@ const recentSales = computed(() => [...saleStore.items].reverse().slice(0, 20))
               </div>
               <p v-if="!extraStore.items.filter(e => e.active).length" class="text-xs text-gray-600 py-1">Sin extras disponibles</p>
             </div>
+
+            <div v-if="line.extras.length && !expandedExtras[i]" class="mt-1 text-xs text-gray-500 ml-6 flex flex-wrap gap-x-3">
+              <span v-for="extra in line.extras" :key="extra.id">
+                {{ extra.name }} x{{ extra.qty }} <span class="text-brand">+${{ (extra.price * extra.qty).toFixed(2) }}</span>
+              </span>
+            </div>
           </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-lg p-3 text-sm space-y-0.5">
+          <template v-for="(line, i) in saleLines" :key="i">
+            <div class="flex justify-between text-xs">
+              <span class="truncate mr-2 text-gray-300">{{ line.name }} x{{ line.qty }}</span>
+              <span class="shrink-0 text-gray-300">${{ calcSubtotal(line.unitPrice, line.qty) }}</span>
+            </div>
+            <div v-for="extra in line.extras" :key="extra.id" class="flex justify-between text-xs pl-4">
+              <span class="truncate mr-2 text-gray-500">{{ extra.name }} x{{ extra.qty }}</span>
+              <span class="shrink-0 text-brand">+${{ (extra.price * extra.qty).toFixed(2) }}</span>
+            </div>
+          </template>
+          <div v-if="saleLines.length" class="border-t border-gray-700 pt-1 flex justify-between text-sm">
+            <span class="text-gray-400">Subtotal:</span><span>${{ subtotalTotal }}</span>
+          </div>
+          <div v-for="d in saleDiscounts" :key="d.id" class="flex justify-between text-green-400 text-xs"><span>{{ d.name }}:</span><span>-${{ calcDiscount(subtotalTotal, d.type, d.value) }}</span></div>
+          <div v-if="discountAmount" class="flex justify-between text-green-400"><span>Descuento total:</span><span>-${{ discountAmount }}</span></div>
+          <div class="flex justify-between text-base font-bold border-t border-gray-700 pt-2"><span>Total:</span><span class="text-brand">${{ finalTotal }}</span></div>
         </div>
 
         <div>
@@ -195,13 +219,6 @@ const recentSales = computed(() => [...saleStore.items].reverse().slice(0, 20))
         <div>
           <label class="block text-sm text-gray-400 mb-1">Observaciones</label>
           <textarea v-model="saleNotes" rows="2" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-brand outline-none resize-none" />
-        </div>
-
-        <div class="bg-gray-800 rounded-lg p-3 text-sm space-y-1">
-          <div class="flex justify-between"><span class="text-gray-400">Subtotal:</span><span>${{ subtotalTotal }}</span></div>
-          <div v-for="d in saleDiscounts" :key="d.id" class="flex justify-between text-green-400 text-xs"><span>{{ d.name }}:</span><span>-${{ calcDiscount(subtotalTotal, d.type, d.value) }}</span></div>
-          <div v-if="discountAmount" class="flex justify-between text-green-400"><span>Descuento total:</span><span>-${{ discountAmount }}</span></div>
-          <div class="flex justify-between text-base font-bold border-t border-gray-700 pt-2"><span>Total:</span><span class="text-brand">${{ finalTotal }}</span></div>
         </div>
 
         <div class="flex gap-2">

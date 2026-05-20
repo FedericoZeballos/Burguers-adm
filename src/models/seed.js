@@ -46,10 +46,10 @@ export function seedIfEmpty() {
   save('products', products)
 
   const extras = [
-    { id: uid(), name: 'Medallón extra', type: 'product', refId: products[0].id, price: 800, active: true, createdAt: new Date().toISOString() },
-    { id: uid(), name: 'Cheddar extra', type: 'ingredient', refId: cheddar.id, price: 300, active: true, createdAt: new Date().toISOString() },
-    { id: uid(), name: 'Panceta extra', type: 'ingredient', refId: panceta.id, price: 400, active: true, createdAt: new Date().toISOString() },
-    { id: uid(), name: 'Papas extra', type: 'product', refId: products[3].id, price: 600, active: true, createdAt: new Date().toISOString() },
+    { id: uid(), name: 'Medallón extra', price: 800, active: true, createdAt: new Date().toISOString(), ingredients: products[0].ingredients.map(i => ({ ...i })), supplies: products[0].supplies.map(s => ({ ...s })), products: [] },
+    { id: uid(), name: 'Cheddar extra', price: 300, active: true, createdAt: new Date().toISOString(), ingredients: [{ id: cheddar.id, qty: 0.1 }], supplies: [], products: [] },
+    { id: uid(), name: 'Panceta extra', price: 400, active: true, createdAt: new Date().toISOString(), ingredients: [{ id: panceta.id, qty: 0.1 }], supplies: [], products: [] },
+    { id: uid(), name: 'Papas extra', price: 600, active: true, createdAt: new Date().toISOString(), ingredients: [{ id: papas.id, qty: 0.3 }], supplies: [{ id: supplies[3].id, qty: 1 }, { id: supplies[2].id, qty: 2 }], products: [] },
   ]
   save('extras', extras)
 
@@ -74,18 +74,7 @@ export function seedIfEmpty() {
   ]
   save('discounts', discounts)
 
-  const sales = [
-    {
-      id: uid(), date: today(), lines: [
-        { productId: products[1].id, type: 'product', name: products[1].name, unitPrice: products[1].salePrice, qty: 2, extras: [{ id: extras[1].id, name: extras[1].name, price: extras[1].price, type: extras[1].type, refId: extras[1].refId, qty: 2 }], subtotal: products[1].salePrice * 2, extraSubtotal: extras[1].price * 2, lineTotal: products[1].salePrice * 2 + extras[1].price * 2 },
-        { productId: products[3].id, type: 'product', name: products[3].name, unitPrice: products[3].salePrice, qty: 1, extras: [], subtotal: products[3].salePrice, extraSubtotal: 0, lineTotal: products[3].salePrice },
-      ], discounts: [], discountAmount: 0, subtotal: 0, total: 0, notes: '', createdAt: new Date().toISOString(),
-    },
-  ]
-  const t1 = sales[0].lines.reduce((s, l) => s + l.lineTotal, 0)
-  sales[0].subtotal = +t1.toFixed(2)
-  sales[0].total = +t1.toFixed(2)
-  save('sales', sales)
+  save('sales', [])
 
   save(SEED_KEY, true)
 }
