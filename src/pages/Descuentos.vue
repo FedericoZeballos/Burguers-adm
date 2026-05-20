@@ -49,7 +49,7 @@ function confirmRemove(id) {
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      <div v-for="item in store.items" :key="item.id" class="bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-gray-700 transition-colors">
+      <div v-for="item in store.items" :key="item.id" class="bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-gray-700 transition-colors flex flex-col h-full">
         <div class="flex items-start justify-between mb-3">
           <h3 class="font-semibold">{{ item.name }}</h3>
           <span class="text-xs px-2 py-0.5 rounded-full font-medium" :class="item.active ? 'bg-green-900/50 text-green-400' : 'bg-gray-800 text-gray-500'">
@@ -59,9 +59,12 @@ function confirmRemove(id) {
         <div class="text-2xl font-bold mb-3" :class="item.type === '%' ? 'text-brand' : 'text-green-400'">
           {{ item.type === '%' ? `${item.value}%` : `$${item.value}` }}
         </div>
-        <div class="flex gap-2 pt-3 border-t border-gray-800">
+        <div class="flex gap-2 pt-3 border-t border-gray-800 mt-auto">
           <button @click="store.toggle(item.id)" class="text-xs px-3 py-1 rounded-lg bg-gray-800 hover:bg-gray-700">{{ item.active ? 'Desactivar' : 'Activar' }}</button>
-          <button @click="openEdit(item)" class="text-xs px-3 py-1 rounded-lg bg-brand/10 text-brand hover:bg-brand/20">Editar</button>
+          <button @click="openEdit(item)" class="px-3 py-1.5 rounded-lg bg-blue-900/20 text-blue-400 hover:bg-blue-900/40 transition-colors flex items-center gap-1.5 text-xs font-medium">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+            <span>Editar descuento</span>
+          </button>
           <button @click="confirmRemove(item.id)" class="text-xs px-3 py-1 rounded-lg bg-red-900/20 text-red-400 hover:bg-red-900/40">Eliminar</button>
         </div>
       </div>

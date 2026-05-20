@@ -3,7 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { useProductStore } from '../stores/productStore'
 import { useIngredientStore } from '../stores/ingredientStore'
 import { useSupplyStore } from '../stores/supplyStore'
-import { getStepForUnit } from '../models/helpers'
+import { getStepForUnit, formatUnit } from '../models/helpers'
 import Modal from '../components/Modal.vue'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
 import ProductCard from '../components/ProductCard.vue'
@@ -15,6 +15,7 @@ const supStore = useSupplyStore()
 const showModal = ref(false)
 const editing = ref(null)
 const confirmDeleteId = ref(null)
+const compactView = ref(false)
 const confirmSave = ref(false)
 const form = ref({ name: '', description: '', ingredients: [], supplies: [] })
 const profitPct = ref(100)
@@ -60,6 +61,12 @@ watch(profitPct, (val) => {
   if (previewCost.value > 0) salePrice.value = +(previewCost.value * (1 + val / 100)).toFixed(2)
 })
 
+watch(previewCost, () => {
+  if (previewCost.value > 0 && salePrice.value > 0) {
+    profitPct.value = +(((salePrice.value / previewCost.value) - 1) * 100).toFixed(4)
+  }
+})
+
 function onSaleBlur() {
   editingSale.value = false
   if (previewCost.value > 0 && salePrice.value > 0) {
@@ -87,9 +94,16 @@ function addIng() {
   else form.value.ingredients.push({ id, qty: 1 })
   ingToAdd.value = ''
 }
-function incIng(idx) { form.value.ingredients[idx].qty++ }
+function incIng(idx) {
+  const ref = ingStore.items.find(i => i.id === form.value.ingredients[idx].id)
+  const step = ref ? getStepForUnit(ref.unit) : 1
+  form.value.ingredients[idx].qty = +(+form.value.ingredients[idx].qty + step).toFixed(1)
+}
 function decIng(idx) {
-  if (form.value.ingredients[idx].qty > 1) form.value.ingredients[idx].qty--
+  const ref = ingStore.items.find(i => i.id === form.value.ingredients[idx].id)
+  const step = ref ? getStepForUnit(ref.unit) : 1
+  const next = +(+form.value.ingredients[idx].qty - step).toFixed(1)
+  if (next >= step) form.value.ingredients[idx].qty = next
 }
 function removeIng(idx) { form.value.ingredients.splice(idx, 1) }
 
@@ -101,9 +115,16 @@ function addSup() {
   else form.value.supplies.push({ id, qty: 1 })
   supToAdd.value = ''
 }
-function incSup(idx) { form.value.supplies[idx].qty++ }
+function incSup(idx) {
+  const ref = supStore.items.find(s => s.id === form.value.supplies[idx].id)
+  const step = ref ? getStepForUnit(ref.unit) : 1
+  form.value.supplies[idx].qty = +(+form.value.supplies[idx].qty + step).toFixed(1)
+}
 function decSup(idx) {
-  if (form.value.supplies[idx].qty > 1) form.value.supplies[idx].qty--
+  const ref = supStore.items.find(s => s.id === form.value.supplies[idx].id)
+  const step = ref ? getStepForUnit(ref.unit) : 1
+  const next = +(+form.value.supplies[idx].qty - step).toFixed(1)
+  if (next >= step) form.value.supplies[idx].qty = next
 }
 function removeSup(idx) { form.value.supplies.splice(idx, 1) }
 
@@ -130,12 +151,18 @@ function confirmDelete(id) {
 <template>
   <div>
     <div class="flex items-center justify-between mb-4">
-      <p class="text-sm text-gray-400">{{ store.items.length }} productos</p>
+      <div class="flex items-center gap-3">
+        <p class="text-sm text-gray-400">{{ store.items.length }} productos</p>
+        <button @click="compactView = !compactView" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors" :class="compactView ? 'bg-brand/20 text-brand' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          {{ compactView ? 'Vista completa' : 'Vista resumida' }}
+        </button>
+      </div>
       <button @click="openCreate" class="px-4 py-2 bg-brand text-gray-900 font-medium rounded-lg hover:bg-brand-dark transition-colors text-sm">+ Nuevo</button>
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      <ProductCard v-for="p in store.items" :key="p.id" :product="p" @edit="openEdit" @toggle="store.toggle" @delete="confirmDelete" />
+      <ProductCard v-for="p in store.items" :key="p.id" :product="p" :compact="compactView" @edit="openEdit" @toggle="store.toggle" @delete="confirmDelete" />
     </div>
     <p v-if="!store.items.length" class="text-center text-gray-600 py-8">No hay productos. ¡Crea uno!</p>
 
@@ -171,7 +198,7 @@ function confirmDelete(id) {
           <div v-for="(entry, idx) in form.ingredients" :key="entry.id" class="flex items-center justify-between text-xs text-gray-400 py-1 mt-1">
             <div class="flex items-center gap-1 min-w-0">
               <button type="button" @click="decIng(idx)" class="w-5 h-5 flex items-center justify-center rounded bg-gray-700 hover:bg-gray-600 shrink-0">−</button>
-              <span class="w-4 text-center text-white shrink-0">{{ entry.qty }}</span>
+              <input v-model.number="entry.qty" type="number" min="0" step="any" class="w-12 text-center bg-gray-800 border border-gray-700 rounded px-1 py-0.5 text-xs text-white" />
               <button type="button" @click="incIng(idx)" class="w-5 h-5 flex items-center justify-center rounded bg-gray-700 hover:bg-gray-600 shrink-0">+</button>
               <span class="ml-2 truncate">{{ ingStore.items.find(i => i.id === entry.id)?.name }} <span class="text-gray-600">(${{ ingStore.items.find(i => i.id === entry.id)?.costPerUnit }}/{{ ingStore.items.find(i => i.id === entry.id)?.unit }})</span></span>
             </div>
@@ -191,7 +218,7 @@ function confirmDelete(id) {
           <div v-for="(entry, idx) in form.supplies" :key="entry.id" class="flex items-center justify-between text-xs text-gray-400 py-1 mt-1">
             <div class="flex items-center gap-1 min-w-0">
               <button type="button" @click="decSup(idx)" class="w-5 h-5 flex items-center justify-center rounded bg-gray-700 hover:bg-gray-600 shrink-0">−</button>
-              <span class="w-4 text-center text-white shrink-0">{{ entry.qty }}</span>
+              <input v-model.number="entry.qty" type="number" min="0" step="any" class="w-12 text-center bg-gray-800 border border-gray-700 rounded px-1 py-0.5 text-xs text-white" />
               <button type="button" @click="incSup(idx)" class="w-5 h-5 flex items-center justify-center rounded bg-gray-700 hover:bg-gray-600 shrink-0">+</button>
               <span class="ml-2 truncate">{{ supStore.items.find(s => s.id === entry.id)?.name }} <span class="text-gray-600">(${{ supStore.items.find(s => s.id === entry.id)?.costPerUnit }}/{{ supStore.items.find(s => s.id === entry.id)?.unit }})</span></span>
             </div>
@@ -204,16 +231,21 @@ function confirmDelete(id) {
 
         <div class="bg-gray-800 border border-brand/10 rounded-lg p-3 text-sm space-y-1">
           <div v-for="entry in form.ingredients" :key="entry.id" class="flex justify-between text-xs text-gray-500">
-            <span>{{ ingStore.items.find(i => i.id === entry.id)?.name }} x{{ entry.qty }}</span>
+            <span>x{{ entry.qty }} <span class="text-gray-600">{{ formatUnit(ingStore.items.find(i => i.id === entry.id)?.unit || '', entry.qty) }}</span> {{ ingStore.items.find(i => i.id === entry.id)?.name }}</span>
             <span>${{ ((ingStore.items.find(i => i.id === entry.id)?.costPerUnit || 0) * entry.qty).toFixed(2) }}</span>
           </div>
           <div v-for="entry in form.supplies" :key="entry.id" class="flex justify-between text-xs text-gray-500">
-            <span>{{ supStore.items.find(i => i.id === entry.id)?.name }} x{{ entry.qty }}</span>
+            <span>x{{ entry.qty }} <span class="text-gray-600">{{ formatUnit(supStore.items.find(i => i.id === entry.id)?.unit || '', entry.qty) }}</span> {{ supStore.items.find(i => i.id === entry.id)?.name }}</span>
             <span>${{ ((supStore.items.find(i => i.id === entry.id)?.costPerUnit || 0) * entry.qty).toFixed(2) }}</span>
           </div>
-          <div class="flex justify-between pt-1 border-t border-gray-700"><span class="text-gray-400">Costo total:</span><span>${{ previewCost }}</span></div>
-          <div class="flex justify-between"><span class="text-gray-400">Ganancia:</span><span class="text-green-400">{{ previewCost > 0 ? ((salePrice / previewCost - 1) * 100).toFixed(2) : 0 }}%</span></div>
-          <div class="flex justify-between"><span class="text-gray-400">Precio venta:</span><span class="text-brand font-semibold">${{ salePrice }}</span></div>
+          <div class="pt-2 border-t border-gray-700">
+            <p class="text-xs text-brand mb-1 font-medium">Costos</p>
+            <div class="space-y-1">
+              <div class="flex justify-between"><span class="text-gray-400">Costo total:</span><span>${{ previewCost }}</span></div>
+              <div class="flex justify-between"><span class="text-gray-400">Ganancia:</span><span :class="previewCost > 0 && ((salePrice / previewCost - 1) * 100) < 0 ? 'text-red-400' : 'text-green-400'">{{ previewCost > 0 ? ((salePrice / previewCost - 1) * 100).toFixed(2) : 0 }}%</span></div>
+              <div class="flex justify-between"><span class="text-gray-400">Precio venta:</span><span class="text-brand font-semibold">${{ salePrice }}</span></div>
+            </div>
+          </div>
         </div>
 
         <div class="flex gap-2 pt-2">

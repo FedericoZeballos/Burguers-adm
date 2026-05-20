@@ -78,7 +78,10 @@ function confirmRemove(id) {
           <div><span class="text-gray-600">Vence:</span> {{ formatDate(item.expiryDate) }}</div>
         </div>
         <div class="flex gap-2 mt-3 pt-3 border-t border-gray-800">
-          <button @click="openEdit(item)" class="text-xs px-3 py-1 rounded-lg bg-brand/10 text-brand hover:bg-brand/20">Editar</button>
+          <button @click="openEdit(item)" class="px-3 py-1.5 rounded-lg bg-blue-900/20 text-blue-400 hover:bg-blue-900/40 transition-colors flex items-center gap-1.5 text-xs font-medium">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+            <span>Editar ingrediente</span>
+          </button>
           <button @click="confirmRemove(item.id)" class="text-xs px-3 py-1 rounded-lg bg-red-900/20 text-red-400 hover:bg-red-900/40">Eliminar</button>
         </div>
       </div>

@@ -49,10 +49,9 @@ export const useProductStore = defineStore('products', () => {
     if (idx === -1) return
     const p = items.value[idx]
     Object.assign(p, data)
-    p.profitPct = +data.profitPct
-    p.salePrice = +data.salePrice
     p.cost = calcCost(p)
-    if (!p.salePrice) p.salePrice = calcSalePrice(p.cost, p.profitPct)
+    p.salePrice = +data.salePrice
+    p.profitPct = p.cost > 0 ? +(((p.salePrice - p.cost) / p.cost) * 100).toFixed(4) : 0
     persist()
   }
 

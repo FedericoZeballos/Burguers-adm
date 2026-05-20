@@ -13,6 +13,7 @@ const prodStore = useProductStore()
 const showModal = ref(false)
 const editing = ref(null)
 const confirmDeleteId = ref(null)
+const compactView = ref(false)
 const confirmSave = ref(false)
 const form = ref({ name: '', products: [], salePrice: 0, startDate: '', endDate: '' })
 
@@ -78,12 +79,18 @@ function confirmDelete(id) {
 <template>
   <div>
     <div class="flex items-center justify-between mb-4">
-      <p class="text-sm text-gray-400">{{ store.items.length }} combos</p>
+      <div class="flex items-center gap-3">
+        <p class="text-sm text-gray-400">{{ store.items.length }} combos</p>
+        <button @click="compactView = !compactView" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors" :class="compactView ? 'bg-brand/20 text-brand' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          {{ compactView ? 'Vista completa' : 'Vista resumida' }}
+        </button>
+      </div>
       <button @click="openCreate" class="px-4 py-2 bg-brand text-gray-900 font-medium rounded-lg hover:bg-brand-dark transition-colors text-sm">+ Nuevo</button>
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      <ComboCard v-for="c in store.items" :key="c.id" :combo="c" @edit="openEdit" @toggle="store.toggle" @delete="confirmDelete" />
+      <ComboCard v-for="c in store.items" :key="c.id" :combo="c" :compact="compactView" @edit="openEdit" @toggle="store.toggle" @delete="confirmDelete" />
     </div>
     <p v-if="!store.items.length" class="text-center text-gray-600 py-8">No hay combos. ¡Crea uno!</p>
 
@@ -105,7 +112,7 @@ function confirmDelete(id) {
           <div v-for="(entry, idx) in form.products" :key="entry.productId" class="flex items-center justify-between text-xs text-gray-400 py-1 mt-1">
             <div class="flex items-center gap-1 min-w-0">
               <button type="button" @click="decProd(idx)" class="w-5 h-5 flex items-center justify-center rounded bg-gray-700 hover:bg-gray-600 shrink-0">−</button>
-              <span class="w-4 text-center text-white shrink-0">{{ entry.qty }}</span>
+              <input v-model.number="entry.qty" type="number" min="0" step="any" class="w-12 text-center bg-gray-800 border border-gray-700 rounded px-1 py-0.5 text-xs text-white" />
               <button type="button" @click="incProd(idx)" class="w-5 h-5 flex items-center justify-center rounded bg-gray-700 hover:bg-gray-600 shrink-0">+</button>
               <span class="ml-2 truncate">{{ prodStore.items.find(p => p.id === entry.productId)?.name }} <span class="text-gray-600">(${{ prodStore.items.find(p => p.id === entry.productId)?.cost }}/un)</span></span>
             </div>
@@ -132,12 +139,15 @@ function confirmDelete(id) {
           </div>
         </div>
 
-        <div class="bg-gray-800 border border-brand/10 rounded-lg p-3 text-sm space-y-1">
-          <div class="flex justify-between"><span class="text-gray-400">Costo:</span><span>${{ previewCost }}</span></div>
-          <div class="flex justify-between"><span class="text-gray-400">Precio venta:</span><span class="text-brand font-semibold">${{ form.salePrice }}</span></div>
-          <div class="flex justify-between"><span class="text-gray-400">Margen:</span><span class="text-green-400">{{ previewProfitPct }}%</span></div>
-          <div class="flex justify-between"><span class="text-gray-400">Ganancia:</span><span class="text-green-400">${{ previewProfitMoney }}</span></div>
-          <div v-if="previewProfitMoney < 0" class="text-red-400 text-xs mt-1">⚠️ El precio de venta es menor al costo</div>
+        <div class="bg-gray-800 border border-brand/10 rounded-lg p-3 text-sm">
+          <p class="text-xs text-brand mb-1 font-medium">Costos</p>
+          <div class="space-y-1">
+            <div class="flex justify-between"><span class="text-gray-400">Costo:</span><span>${{ previewCost }}</span></div>
+            <div class="flex justify-between"><span class="text-gray-400">Precio venta:</span><span class="text-brand font-semibold">${{ form.salePrice }}</span></div>
+            <div class="flex justify-between"><span class="text-gray-400">Margen:</span><span :class="previewProfitPct < 0 ? 'text-red-400' : 'text-green-400'">{{ previewProfitPct }}%</span></div>
+            <div class="flex justify-between"><span class="text-gray-400">Ganancia:</span><span :class="previewProfitMoney < 0 ? 'text-red-400' : 'text-green-400'">${{ previewProfitMoney }}</span></div>
+            <div v-if="previewProfitMoney < 0" class="text-red-400 text-xs mt-1">⚠️ El precio de venta es menor al costo</div>
+          </div>
         </div>
 
         <div class="flex gap-2 pt-2">

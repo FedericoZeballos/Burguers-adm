@@ -56,7 +56,13 @@ export function calcTotalPrice(costPerUnit, qty) {
 }
 
 export function getStepForUnit(unit) {
-  return 'any'
+  if (unit === 'kg' || unit === 'l' || unit === 'g' || unit === 'ml') return 0.1
+  return 1
+}
+
+export function formatUnit(unit, qty) {
+  if (unit === 'unidad') return qty > 1 ? 'uds.' : 'ud.'
+  return unit
 }
 
 export function calcSalePrice(cost, profitPct) {
